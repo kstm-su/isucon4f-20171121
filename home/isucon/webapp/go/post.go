@@ -1,5 +1,17 @@
 package main
 
+import (
+	"bytes"
+	"compress/gzip"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+
+	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
+)
+
 func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	slot := params["slot"]
 
@@ -48,12 +60,36 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	defer f.Close()
 	buf := bytes.NewBuffer(nil)
 	io.Copy(buf, f)
-	asset_data := string(buf.Bytes())
+	//asset_data := string(buf.Bytes())
 
-	rd.Set(assetKey(slot, id), asset_data)
+	//rd.Set(assetKey(slot, id), asset_data)
+	if err := os.MkdirAll("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/", 0777); err != nil {
+		return
+	}
+
+	gzipData, err := makeGzip(buf.Bytes())
+	if err != nil {
+		return
+	}
+
+	ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
+
 	rd.RPush(slotKey(slot), id)
 	rd.SAdd(advertiserKey(advrId), key)
 
 	r.JSON(200, getAd(req, slot, id))
 }
 
+func makeGzip(body []byte) ([]byte, error) {
+	var b bytes.Buffer
+	err := func() error {
+		gw := gzip.NewWriter(&b)
+		defer gw.Close()
+
+		if _, err := gw.Write(body); err != nil {
+			return err
+		}
+		return nil
+	}()
+	return b.Bytes(), err
+}
