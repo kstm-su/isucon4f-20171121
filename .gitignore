@@ -70,3 +70,9 @@
 /root/*
 !/root/.vimrc
 
+# /opt/kataribe.toml
+/*
+!/opt
+/opt/*
+!/opt/kataribe.toml
+
