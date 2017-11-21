@@ -100,3 +100,15 @@
 /home/isucon/webapp/go/*
 !/home/isucon/webapp/go/init.go
 
+# /home/isucon/webapp/go/count.go
+/*
+!/home
+/home/*
+!/home/isucon
+/home/isucon/*
+!/home/isucon/webapp
+/home/isucon/webapp/*
+!/home/isucon/webapp/go
+/home/isucon/webapp/go/*
+!/home/isucon/webapp/go/count.go
+
