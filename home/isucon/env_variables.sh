@@ -12,3 +12,4 @@ export PERL_CARTON_PATH=/home/isucon/.local/carton
 export ISUCON_API_KEY=NO_API_KEY
 export OTHER1=app2
 export OTHER2=app3
+export GIN_MODE=release
