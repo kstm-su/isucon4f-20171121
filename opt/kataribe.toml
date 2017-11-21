@@ -47,7 +47,7 @@ duration_index = 10
 #
 [[bundle]]
 regexp = '^POST /slots/([^/]+)/ads'
-name = "POST /slots/:slot/ad"
+name = "POST /slots/:slot/ads"
 
 [[bundle]]
 regexp = '^GET /slots/[^/]+/ad'
