@@ -44,3 +44,11 @@
 /opt/*
 !/opt/rotate.sh
 
+# /home/isucon/.vimrc
+/*
+!/home
+/home/*
+!/home/isucon
+/home/isucon/*
+!/home/isucon/.vimrc
+
