@@ -1,18 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"net/http"
-	"os"
 	"strconv"
-	"strings"
-	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/redis.v2"
 )
-
 
 func routeGetReport(c *gin.Context) {
 	advrId := advertiserId(c.Request)
