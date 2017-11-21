@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/redis.v2"
@@ -179,52 +177,6 @@ func decodeUserKey(id string) (string, int) {
 	return gender, age
 }
 
-func getLogPath(advrId string) string {
-	dir := getDir("log")
-	splitted := strings.Split(advrId, "/")
-	return dir + "/" + splitted[len(splitted)-1]
-}
-
-func getLog(id string) map[string][]ClickLog {
-	path := getLogPath(id)
-	result := map[string][]ClickLog{}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return result
-	}
-
-	f, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
-	if err != nil {
-		panic(err)
-	}
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		line = strings.TrimRight(line, "\n")
-		sp := strings.Split(line, "\t")
-		ad_id := sp[0]
-		user := sp[1]
-		agent := sp[2]
-		if agent == "" {
-			agent = "unknown"
-		}
-		gender, age := decodeUserKey(sp[1])
-		if result[ad_id] == nil {
-			result[ad_id] = []ClickLog{}
-		}
-		data := ClickLog{ad_id, user, agent, gender, age}
-		result[ad_id] = append(result[ad_id], data)
-	}
-
-	return result
-}
-
 func routeGetAd(c *gin.Context) {
 	slot := c.Param("slot")
 	ad := nextAd(c.Request, slot)
@@ -258,128 +210,24 @@ func routeGetAdRedirect(c *gin.Context) {
 
 	path := getLogPath(ad.Advertiser)
 
-	var f *os.File
-	f, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
+	/*
+		var f *os.File
+		f, err = os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			panic(err)
+		}
 
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
-	if err != nil {
-		panic(err)
-	}
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+		if err != nil {
+			panic(err)
+		}
 
-	fmt.Fprintf(f, "%s\t%s\t%s\n", ad.Id, isuad, ua)
-	f.Close()
+		fmt.Fprintf(f, "%s\t%s\t%s\n", ad.Id, isuad, ua)
+		f.Close()
+	*/
+	rd.RPush(path, fmt.Sprintf("%s\t%s\t%s", ad.Id, isuad, ua))
 
 	c.Redirect(301, ad.Destination)
-}
-
-func routeGetReport(c *gin.Context) {
-	advrId := advertiserId(c.Request)
-
-	if advrId == "" {
-		c.Status(401)
-		return
-	}
-
-	report := map[string]*Report{}
-	adKeys, _ := rd.SMembers(advertiserKey(advrId)).Result()
-	for _, adKey := range adKeys {
-		ad, _ := rd.HGetAllMap(adKey).Result()
-		if ad == nil {
-			continue
-		}
-
-		imp, _ := strconv.Atoi(ad["impressions"])
-		data := &Report{
-			&Ad{
-				ad["slot"],
-				ad["id"],
-				ad["title"],
-				ad["type"],
-				ad["advertiser"],
-				ad["destination"],
-				imp,
-			},
-			0,
-			imp,
-			nil,
-		}
-		report[ad["id"]] = data
-	}
-
-	for adId, clicks := range getLog(advrId) {
-		if _, exists := report[adId]; !exists {
-			report[adId] = &Report{}
-		}
-		report[adId].Clicks = len(clicks)
-	}
-	c.JSON(200, report)
-}
-
-func routeGetFinalReport(c *gin.Context) {
-	advrId := advertiserId(c.Request)
-
-	if advrId == "" {
-		c.Status(401)
-		return
-	}
-
-	reports := map[string]*Report{}
-	adKeys, _ := rd.SMembers(advertiserKey(advrId)).Result()
-	for _, adKey := range adKeys {
-		ad, _ := rd.HGetAllMap(adKey).Result()
-		if ad == nil {
-			continue
-		}
-
-		imp, _ := strconv.Atoi(ad["impressions"])
-		data := &Report{
-			&Ad{
-				ad["slot"],
-				ad["id"],
-				ad["title"],
-				ad["type"],
-				ad["advertiser"],
-				ad["destination"],
-				imp,
-			},
-			0,
-			imp,
-			nil,
-		}
-		reports[ad["id"]] = data
-	}
-
-	logs := getLog(advrId)
-
-	for adId, report := range reports {
-		log, exists := logs[adId]
-		if exists {
-			report.Clicks = len(log)
-		}
-
-		breakdown := &BreakdownReport{
-			map[string]int{},
-			map[string]int{},
-			map[string]int{},
-		}
-		for i := range log {
-			click := log[i]
-			incr_map(&breakdown.Gender, click.Gender)
-			incr_map(&breakdown.Agents, click.Agent)
-			generation := "unknown"
-			if click.Age != -1 {
-				generation = strconv.Itoa(click.Age / 10)
-			}
-			incr_map(&breakdown.Generations, generation)
-		}
-		report.Breakdown = breakdown
-		reports[adId] = report
-	}
-
-	c.JSON(200, reports)
 }
 
 func main() {

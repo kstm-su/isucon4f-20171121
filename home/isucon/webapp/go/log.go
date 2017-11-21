@@ -1,16 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"net/http"
 	"os"
-	"strconv"
 	"strings"
-	"syscall"
-
-	"github.com/gin-gonic/gin"
-	"gopkg.in/redis.v2"
 )
 
 func getLogPath(advrId string) string {
@@ -21,27 +14,15 @@ func getLogPath(advrId string) string {
 
 func getLog(id string) map[string][]ClickLog {
 	path := getLogPath(id)
+	s, err := rd.LRange(path, 0, -1).Result()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "getLog: ", err)
+		return nil
+	}
+
 	result := map[string][]ClickLog{}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return result
-	}
-
-	f, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
-	if err != nil {
-		panic(err)
-	}
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		line = strings.TrimRight(line, "\n")
-		sp := strings.Split(line, "\t")
+	for _, l := range s {
+		sp := strings.Split(l, "\t")
 		ad_id := sp[0]
 		user := sp[1]
 		agent := sp[2]
@@ -55,7 +36,5 @@ func getLog(id string) map[string][]ClickLog {
 		data := ClickLog{ad_id, user, agent, gender, age}
 		result[ad_id] = append(result[ad_id], data)
 	}
-
 	return result
 }
-
