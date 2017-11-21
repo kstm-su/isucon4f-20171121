@@ -80,7 +80,7 @@ func routePostAd(c *gin.Context) {
 
 	g.Go(func() error {
 		gzipBuf := bytes.NewBuffer(gzipData)
-		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER1")+"/syncasset/"+slot+"/"+id, gzipBuf)
+		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER1")+":8080/syncasset/"+slot+"/"+id, gzipBuf)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func routePostAd(c *gin.Context) {
 
 	g.Go(func() error {
 		gzipBuf := bytes.NewBuffer(gzipData)
-		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+"/syncasset/"+slot+"/"+id, gzipBuf)
+		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+":8080/syncasset/"+slot+"/"+id, gzipBuf)
 		if err != nil {
 			return err
 		}
