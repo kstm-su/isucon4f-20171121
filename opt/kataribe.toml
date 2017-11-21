@@ -46,41 +46,41 @@ duration_index = 10
 # For overview of regexp syntax: https://golang.org/pkg/regexp/syntax/
 #
 [[bundle]]
-regexp = '^POST /slots/([^/]+)/ads'
+regexp = '^POST /slots/([^/]+)/ads '
 name = "POST /slots/:slot/ads"
 
 [[bundle]]
-regexp = '^GET /slots/[^/]+/ad'
+regexp = '^GET /slots/[^/]+/ad '
 name = "GET /slots/:slot/ad"
 
 [[bundle]]
-regexp = '^GET /slots/[^/]+/ads/\d+'
+regexp = '^GET /slots/[^/]+/ads/\d+ '
 name = "GET /slots/:slot/ads/:id"
 
 [[bundle]]
-regexp = '^GET /slots/[^/]+/ads/\d+/asset'
+regexp = '^GET /slots/[^/]+/ads/\d+/asset '
 name = "GET /slots/:slot/ads/:id/asset"
 
 [[bundle]] 
-regexp = '^POST /slots/[^/]+/ads/\d+/count'
+regexp = '^POST /slots/[^/]+/ads/\d+/count '
 name = "POST /slots/:slot/ads/:id/count"
 
 [[bundle]] 
-regexp = '^GET /slots/[^/]+/ads/\d+/redirect'
+regexp = '^GET /slots/[^/]+/ads/\d+/redirect '
 name = "GET /slots/:slot/ads/:id/redirect"
 
 [[bundle]]
-regexp = '^GET /me/report'
+regexp = '^GET /me/report '
 name = "GET /me/report"
 
 [[bundle]]
-regexp = '^GET /me/final_report'
+regexp = '^GET /me/final_report '
 name = "GET /me/final_report"
 
 [[bundle]]
-regexp = '^GET /stylesheets'
+regexp = '^GET /stylesheets '
 name = "GET /stylesheets"
 
 [[bundle]]
-regexp = '^GET /javascripts'
+regexp = '^GET /javascripts '
 name = "GET /javascripts"
