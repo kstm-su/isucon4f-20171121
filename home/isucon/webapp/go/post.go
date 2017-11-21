@@ -78,6 +78,7 @@ func routePostAd(c *gin.Context) {
 	client := &http.Client{}
 	client.Do(req)
 
+	gzipBuf = bytes.NewBuffer(gzipData)
 	req, _ = http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+"/syncasset/"+slot+"/"+id, gzipBuf)
 	client = &http.Client{}
 	client.Do(req)
