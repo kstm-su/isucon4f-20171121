@@ -44,14 +44,43 @@ duration_index = 10
 
 # You can aggregate requests by regular expression
 # For overview of regexp syntax: https://golang.org/pkg/regexp/syntax/
+#
 [[bundle]]
-regexp = '^(GET|HEAD) /memo/[0-9]+\b'
-name = "get memo"
+regexp = '^POST /slots/([^/]+)/ads'
+name = "POST /slots/:slot/ad"
 
 [[bundle]]
-regexp = '^(GET|HEAD) /stylesheets/'
-name = "stylesheets"
+regexp = '^GET /slots/[^/]+/ad'
+name = "GET /slots/:slot/ad"
 
 [[bundle]]
-regexp = '^(GET|HEAD) /images/'
-name = "images"
+regexp = '^GET /slots/[^/]+/ads/\d+'
+name = "GET /slots/:slot/ads/:id"
+
+[[bundle]]
+regexp = '^GET /slots/[^/]+/ads/\d+/asset'
+name = "GET /slots/:slot/ads/:id/asset"
+
+[[bundle]] 
+regexp = '^POST /slots/[^/]+/ads/\d+/count'
+name = "POST /slots/:slot/ads/:id/count"
+
+[[bundle]] 
+regexp = '^GET /slots/[^/]+/ads/\d+/redirect'
+name = "GET /slots/:slot/ads/:id/redirect"
+
+[[bundle]]
+regexp = '^GET /me/report'
+name = "GET /me/report"
+
+[[bundle]]
+regexp = '^GET /me/final_report'
+name = "GET /me/final_report"
+
+[[bundle]]
+regexp = '^GET /stylesheets'
+name = "GET /stylesheets"
+
+[[bundle]]
+regexp = '^GET /javascripts'
+name = "GET /javascripts"
