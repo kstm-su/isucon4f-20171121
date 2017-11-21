@@ -15,6 +15,6 @@ func routeGetAdCount(c *gin.Context) {
 		return
 	}
 
-	go rd.HIncrBy(key, "impressions", 1).Result()
+	rd.HIncrBy(key, "impressions", 1).Result()
 	c.Status(204)
 }
