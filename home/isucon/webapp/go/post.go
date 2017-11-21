@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
-
-	"github.com/gin-gonic/gin"
 )
 
 func routePostAd(c *gin.Context) {
@@ -71,20 +72,45 @@ func routePostAd(c *gin.Context) {
 		return
 	}
 
-	ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
+	var g errgroup.Group
 
-	gzipBuf := bytes.NewBuffer(gzipData)
-	req, _ := http.NewRequest("POST", "http://"+os.Getenv("OTHER1")+"/syncasset/"+slot+"/"+id, gzipBuf)
-	client := &http.Client{}
-	client.Do(req)
+	g.Go(func() error {
+		return ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
+	})
 
-	gzipBuf = bytes.NewBuffer(gzipData)
-	req, _ = http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+"/syncasset/"+slot+"/"+id, gzipBuf)
-	client = &http.Client{}
-	client.Do(req)
+	g.Go(func() error {
+		gzipBuf := bytes.NewBuffer(gzipData)
+		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER1")+"/syncasset/"+slot+"/"+id, gzipBuf)
+		if err != nil {
+			return err
+		}
+		client := &http.Client{}
+		_, err = client.Do(req)
+		return err
+	})
 
-	rd.RPush(slotKey(slot), id)
-	rd.SAdd(advertiserKey(advrId), key)
+	g.Go(func() error {
+		gzipBuf := bytes.NewBuffer(gzipData)
+		req, err := http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+"/syncasset/"+slot+"/"+id, gzipBuf)
+		if err != nil {
+			return err
+		}
+		client := &http.Client{}
+		_, err = client.Do(req)
+		return err
+	})
+
+	g.Go(func() error {
+		err := rd.RPush(slotKey(slot), id).Err()
+		if err != nil {
+			return err
+		}
+		return rd.SAdd(advertiserKey(advrId), key).Err()
+	})
+
+	if err := g.Wait(); err != nil {
+		log.Printf("Error! routePostAd() %#v\n", err)
+	}
 
 	c.JSON(200, getAd(c.Request, slot, id))
 }
