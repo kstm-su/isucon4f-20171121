@@ -74,11 +74,11 @@ func routePostAd(c *gin.Context) {
 	ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
 
 	gzipBuf := bytes.NewBuffer(gzipData)
-	req, _ := http.NewRequest("POST", "http://OTHER1/syncasset/"+slot+"/"+id, gzipBuf)
+	req, _ := http.NewRequest("POST", "http://"+os.Getenv("OTHER1")+"/syncasset/"+slot+"/"+id, gzipBuf)
 	client := &http.Client{}
 	client.Do(req)
 
-	req, _ = http.NewRequest("POST", "http://OTHER2/syncasset/"+slot+"/"+id, gzipBuf)
+	req, _ = http.NewRequest("POST", "http://"+os.Getenv("OTHER2")+"/syncasset/"+slot+"/"+id, gzipBuf)
 	client = &http.Client{}
 	client.Do(req)
 
