@@ -13,7 +13,7 @@ import (
 	"syscall"
 
 	"github.com/go-martini/martini"
-	"github.com/go-redis/redis.v2"
+	"gopkg.in/redis.v2"
 	"github.com/martini-contrib/render"
 )
 
