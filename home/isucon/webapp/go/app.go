@@ -55,7 +55,8 @@ var rd *redis.Client
 
 func init() {
 	rd = redis.NewTCPClient(&redis.Options{
-		Addr: "localhost:6379",
+		//Addr: "localhost:6379",
+		Addr: "app1:6379",
 		DB:   0,
 	})
 }
@@ -398,6 +399,7 @@ func main() {
 		me.GET("/report", routeGetReport)
 		me.GET("/final_report", routeGetFinalReport)
 	}
+	r.POST("/syncasset/:slot/:id", syncAsset)
 
 	r.POST("/initialize", routePostInitialize)
 	r.Run(":8080")

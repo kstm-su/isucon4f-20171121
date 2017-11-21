@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -72,10 +73,36 @@ func routePostAd(c *gin.Context) {
 
 	ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
 
+	gzipBuf := bytes.NewBuffer(gzipData)
+	req, _ := http.NewRequest("POST", "http://OTHER1/syncasset/"+slot+"/"+id, gzipBuf)
+	client := &http.Client{}
+	client.Do(req)
+
+	req, _ = http.NewRequest("POST", "http://OTHER2/syncasset/"+slot+"/"+id, gzipBuf)
+	client = &http.Client{}
+	client.Do(req)
+
 	rd.RPush(slotKey(slot), id)
 	rd.SAdd(advertiserKey(advrId), key)
 
 	c.JSON(200, getAd(c.Request, slot, id))
+}
+
+func syncAsset(c *gin.Context) {
+	slot := c.Param("slot")
+	id := c.Param("id")
+	gzipData, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err})
+		return
+	}
+	c.Request.Body.Close()
+
+	if err := os.MkdirAll("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/", 0777); err != nil {
+		c.JSON(400, gin.H{"error": err})
+		return
+	}
+	ioutil.WriteFile("/home/isucon/webapp/public/slots/"+slot+"/ads/"+id+"/asset.gz", gzipData, os.ModePerm)
 }
 
 func makeGzip(body []byte) ([]byte, error) {
