@@ -64,3 +64,9 @@
 /home/isucon/webapp/go/*
 !/home/isucon/webapp/go/Makefile
 
+# /root/.vimrc
+/*
+!/root
+/root/*
+!/root/.vimrc
+
