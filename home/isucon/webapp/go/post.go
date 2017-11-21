@@ -5,30 +5,28 @@ import (
 	"compress/gzip"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
 )
 
-func routePostAd(r render.Render, req *http.Request, params martini.Params) {
-	slot := params["slot"]
+func routePostAd(c *gin.Context) {
+	slot := c.Param("slot")
 
-	advrId := advertiserId(req)
+	advrId := advertiserId(c.Request)
 	if advrId == "" {
-		r.Status(404)
+		c.Status(404)
 		return
 	}
 
-	req.ParseMultipartForm(100000)
-	asset := req.MultipartForm.File["asset"][0]
+	c.Request.ParseMultipartForm(100000)
+	asset := c.Request.MultipartForm.File["asset"][0]
 	id := nextAdId()
 	key := adKey(slot, id)
 
 	content_type := ""
-	if len(req.Form["type"]) > 0 {
-		content_type = req.Form["type"][0]
+	if len(c.PostForm("type")) > 0 {
+		content_type = c.Request.Form["type"][0]
 	}
 	if content_type == "" && len(asset.Header["Content-Type"]) > 0 {
 		content_type = asset.Header["Content-Type"][0]
@@ -38,11 +36,11 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	}
 
 	title := ""
-	if a := req.Form["title"]; a != nil {
+	if a := c.Request.Form["title"]; a != nil {
 		title = a[0]
 	}
 	destination := ""
-	if a := req.Form["destination"]; a != nil {
+	if a := c.Request.Form["destination"]; a != nil {
 		destination = a[0]
 	}
 	rd.HMSet(key,
@@ -77,7 +75,7 @@ func routePostAd(r render.Render, req *http.Request, params martini.Params) {
 	rd.RPush(slotKey(slot), id)
 	rd.SAdd(advertiserKey(advrId), key)
 
-	r.JSON(200, getAd(req, slot, id))
+	c.JSON(200, getAd(c.Request, slot, id))
 }
 
 func makeGzip(body []byte) ([]byte, error) {

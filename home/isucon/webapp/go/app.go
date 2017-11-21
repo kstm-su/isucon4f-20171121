@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
 
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/redis.v2"
 )
 
@@ -226,91 +224,28 @@ func getLog(id string) map[string][]ClickLog {
 	return result
 }
 
-func routeGetAd(r render.Render, req *http.Request, params martini.Params) {
-	slot := params["slot"]
-	ad := nextAd(req, slot)
+func routeGetAd(c *gin.Context) {
+	slot := c.Param("slot")
+	ad := nextAd(c.Request, slot)
 	if ad != nil {
-		r.Redirect("/slots/" + slot + "/ads/" + ad.Id)
+		c.Redirect(301, "/slots/"+slot+"/ads/"+ad.Id)
 	} else {
-		r.JSON(404, map[string]string{"error": "not_found"})
+		c.JSON(404, map[string]string{"error": "not_found"})
 	}
 }
 
-func routeGetAdAsset(r render.Render, res http.ResponseWriter, req *http.Request, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	ad := getAd(req, slot, id)
-	if ad == nil {
-		r.JSON(404, map[string]string{"error": "not_found"})
-		return
-	}
-	content_type := "application/octet-stream"
-	if ad.Type != "" {
-		content_type = ad.Type
-	}
-
-	res.Header().Set("Content-Type", content_type)
-	data, _ := rd.Get(assetKey(slot, id)).Result()
-
-	range_str := req.Header.Get("Range")
-	if range_str == "" {
-		r.Data(200, []byte(data))
-		return
-	}
-
-	re := regexp.MustCompile("^bytes=(\\d*)-(\\d*)$")
-	m := re.FindAllStringSubmatch(range_str, -1)
-
-	if m == nil {
-		r.Status(416)
-		return
-	}
-
-	head_str := m[0][1]
-	tail_str := m[0][2]
-
-	if head_str == "" && tail_str == "" {
-		r.Status(416)
-		return
-	}
-
-	head := 0
-	tail := 0
-
-	if head_str != "" {
-		head, _ = strconv.Atoi(head_str)
-	}
-	if tail_str != "" {
-		tail, _ = strconv.Atoi(tail_str)
-	} else {
-		tail = len(data) - 1
-	}
-
-	if head < 0 || head >= len(data) || tail < 0 {
-		r.Status(416)
-		return
-	}
-
-	range_data := data[head:(tail + 1)]
-	content_range := fmt.Sprintf("bytes %d-%d/%d", head, tail, len(data))
-	res.Header().Set("Content-Range", content_range)
-	res.Header().Set("Content-Length", strconv.Itoa(len(range_data)))
-
-	r.Data(206, []byte(range_data))
-}
-
-func routeGetAdRedirect(req *http.Request, r render.Render, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	ad := getAd(req, slot, id)
+func routeGetAdRedirect(c *gin.Context) {
+	slot := c.Param("slot")
+	id := c.Param("id")
+	ad := getAd(c.Request, slot, id)
 
 	if ad == nil {
-		r.JSON(404, map[string]string{"error": "not_found"})
+		c.JSON(404, map[string]string{"error": "not_found"})
 		return
 	}
 
 	isuad := ""
-	cookie, err := req.Cookie("isuad")
+	cookie, err := c.Request.Cookie("isuad")
 	if err != nil {
 		if err != http.ErrNoCookie {
 			panic(err)
@@ -318,7 +253,7 @@ func routeGetAdRedirect(req *http.Request, r render.Render, params martini.Param
 	} else {
 		isuad = cookie.Value
 	}
-	ua := req.Header.Get("User-Agent")
+	ua := c.Request.Header.Get("User-Agent")
 
 	path := getLogPath(ad.Advertiser)
 
@@ -336,14 +271,14 @@ func routeGetAdRedirect(req *http.Request, r render.Render, params martini.Param
 	fmt.Fprintf(f, "%s\t%s\t%s\n", ad.Id, isuad, ua)
 	f.Close()
 
-	r.Redirect(ad.Destination)
+	c.Redirect(301, ad.Destination)
 }
 
-func routeGetReport(req *http.Request, r render.Render) {
-	advrId := advertiserId(req)
+func routeGetReport(c *gin.Context) {
+	advrId := advertiserId(c.Request)
 
 	if advrId == "" {
-		r.Status(401)
+		c.Status(401)
 		return
 	}
 
@@ -379,14 +314,14 @@ func routeGetReport(req *http.Request, r render.Render) {
 		}
 		report[adId].Clicks = len(clicks)
 	}
-	r.JSON(200, report)
+	c.JSON(200, report)
 }
 
-func routeGetFinalReport(req *http.Request, r render.Render) {
-	advrId := advertiserId(req)
+func routeGetFinalReport(c *gin.Context) {
+	advrId := advertiserId(c.Request)
 
 	if advrId == "" {
-		r.Status(401)
+		c.Status(401)
 		return
 	}
 
@@ -443,29 +378,27 @@ func routeGetFinalReport(req *http.Request, r render.Render) {
 		reports[adId] = report
 	}
 
-	r.JSON(200, reports)
+	c.JSON(200, reports)
 }
 
 func main() {
-	m := martini.Classic()
+	r := gin.Default()
 
-	m.Use(martini.Static("../public"))
-	m.Use(render.Renderer(render.Options{
-		Layout: "layout",
-	}))
+	{
+		slots := r.Group("/slots/:slot")
+		slots.POST("/ads", routePostAd)
+		slots.GET("/ad", routeGetAd)
+		slots.GET("/ads/:id", routeGetAdWithId)
+		slots.POST("/ads/:id/count", routeGetAdCount)
+		slots.GET("/ads/:id/redirect", routeGetAdRedirect)
+	}
 
-	m.Group("/slots/:slot", func(r martini.Router) {
-		m.Post("/ads", routePostAd)
-		m.Get("/ad", routeGetAd)
-		m.Get("/ads/:id", routeGetAdWithId)
-		m.Get("/ads/:id/asset", routeGetAdAsset)
-		m.Post("/ads/:id/count", routeGetAdCount)
-		m.Get("/ads/:id/redirect", routeGetAdRedirect)
-	})
-	m.Group("/me", func(r martini.Router) {
-		m.Get("/report", routeGetReport)
-		m.Get("/final_report", routeGetFinalReport)
-	})
-	m.Post("/initialize", routePostInitialize)
-	http.ListenAndServe(":8080", m)
+	{
+		me := r.Group("/me")
+		me.GET("/report", routeGetReport)
+		me.GET("/final_report", routeGetFinalReport)
+	}
+
+	r.POST("/initialize", routePostInitialize)
+	r.Run(":8080")
 }

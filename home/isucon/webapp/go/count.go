@@ -1,21 +1,20 @@
 package main
 
 import (
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
 )
 
-func routeGetAdCount(r render.Render, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
+func routeGetAdCount(c *gin.Context) {
+	slot := c.Param("slot")
+	id := c.Param("id")
 	key := adKey(slot, id)
 
 	exists, _ := rd.Exists(key).Result()
 	if !exists {
-		r.JSON(404, map[string]string{"error": "not_found"})
+		c.JSON(404, map[string]string{"error": "not_found"})
 		return
 	}
 
 	go rd.HIncrBy(key, "impressions", 1).Result()
-	r.Status(204)
+	c.Status(204)
 }

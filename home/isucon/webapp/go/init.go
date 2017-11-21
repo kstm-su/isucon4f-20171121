@@ -2,9 +2,11 @@ package main
 
 import (
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
-func routePostInitialize() (int, string) {
+func routePostInitialize(c *gin.Context) {
 	keys, _ := rd.Keys("isu4:*").Result()
 	for i := range keys {
 		key := keys[i]
@@ -15,5 +17,5 @@ func routePostInitialize() (int, string) {
 
 	os.RemoveAll("/home/isucon/webapp/public/slots/")
 
-	return 200, "OK"
+	c.String(200, "OK")
 }

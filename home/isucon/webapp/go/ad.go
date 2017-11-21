@@ -1,19 +1,16 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
 )
 
-func routeGetAdWithId(r render.Render, req *http.Request, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	ad := getAd(req, slot, id)
+func routeGetAdWithId(c *gin.Context) {
+	slot := c.Param("slot")
+	id := c.Param("id")
+	ad := getAd(c.Request, slot, id)
 	if ad != nil {
-		r.JSON(200, ad)
+		c.JSON(200, ad)
 	} else {
-		r.JSON(404, map[string]string{"error": "not_found"})
+		c.JSON(404, map[string]string{"error": "not_found"})
 	}
 }
