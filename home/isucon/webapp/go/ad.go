@@ -1,6 +1,11 @@
 package main
 
-import ()
+import (
+	"net/http"
+
+	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
+)
 
 func routeGetAdWithId(r render.Render, req *http.Request, params martini.Params) {
 	slot := params["slot"]

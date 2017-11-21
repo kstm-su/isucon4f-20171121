@@ -236,17 +236,6 @@ func routeGetAd(r render.Render, req *http.Request, params martini.Params) {
 	}
 }
 
-func routeGetAdWithId(r render.Render, req *http.Request, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	ad := getAd(req, slot, id)
-	if ad != nil {
-		r.JSON(200, ad)
-	} else {
-		r.JSON(404, map[string]string{"error": "not_found"})
-	}
-}
-
 func routeGetAdAsset(r render.Render, res http.ResponseWriter, req *http.Request, params martini.Params) {
 	slot := params["slot"]
 	id := params["id"]
@@ -308,21 +297,6 @@ func routeGetAdAsset(r render.Render, res http.ResponseWriter, req *http.Request
 	res.Header().Set("Content-Length", strconv.Itoa(len(range_data)))
 
 	r.Data(206, []byte(range_data))
-}
-
-func routeGetAdCount(r render.Render, params martini.Params) {
-	slot := params["slot"]
-	id := params["id"]
-	key := adKey(slot, id)
-
-	exists, _ := rd.Exists(key).Result()
-	if !exists {
-		r.JSON(404, map[string]string{"error": "not_found"})
-		return
-	}
-
-	rd.HIncrBy(key, "impressions", 1).Result()
-	r.Status(204)
 }
 
 func routeGetAdRedirect(req *http.Request, r render.Render, params martini.Params) {
